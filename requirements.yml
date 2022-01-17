@@ -2,6 +2,7 @@
 roles:
   - src: markosamuli.asdf
   - src: gantsign.oh-my-zsh
+  - src: geerlingguy.docker
 
 # collections:
 #   - name: ansible.posix

@@ -1,11 +1,8 @@
 ---
 roles:
-  - src: geerlingguy.firewall
-  - src: geerlingguy.php
-  - src: geerlingguy.composer
-  - src: geerlingguy.nodejs
-  - src: geerlingguy.swap
+  - src: markosamuli.asdf
+  - src: gantsign.oh-my-zsh
 
-collections:
-  - name: ansible.posix
-  - name: community.general
+# collections:
+#   - name: ansible.posix
+#   - name: community.general

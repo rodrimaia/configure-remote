@@ -1,13 +1,14 @@
 ---
 # Workaround to gather facts in certain scenarios when filtering based on tags.
 # https://github.com/ansible/ansible/issues/57529#issuecomment-513143430
-- hosts: all
+- hosts: localhost
+  connection: local   
 
 # We need to know the user even when 'become'ing later on.
 # Some roles depend on 'ansible_user' for this but that may not
 # be present. See https://github.com/ansible/ansible/issues/23530
 # So, we set some facts ourselves.
-- hosts: all
+- hosts: localhost
   tasks:
     - name: Run whoami to determine username
       command: whoami
@@ -16,63 +17,117 @@
         username: "{{ username.stdout }}"
         ansible_user: "{{ ansible_user_id }}"
 
-- hosts: all
+    - name: check default user's shell
+      ansible.builtin.user:
+        name: rodrigo
+        shell: /bin/zsh
+
+
+- hosts: localhost
+  tasks:
+  - name: run ansible galaxy
+    local_action: command ansible-galaxy install -r requirements.yml --ignore-errors
+
+- hosts: localhost
   become: true
   tasks:
     - import_tasks: tasks/packages.yml
 
-- hosts: all
-  become: true
+# - hosts: all
+#   become: true
 
-  vars_files:
-    - vars/swap.yml
+#   vars_files:
+#     - vars/swap.yml
 
+#   roles:
+#     - { role: geerlingguy.swap }
+
+
+
+- hosts: localhost
+  tasks:
+    - command: git clone https://github.com/spaceship-prompt/spaceship-prompt.git "~/.oh-my-zsh/themes/spaceship-prompt" --depth=1
+      ignore_errors: yes
+    - command: ln -s "~/.oh-my-zsh/themes/spaceship-prompt/spaceship.zsh-theme" "~/.oh-my-zsh/themes/spaceship.zsh-theme"
+      ignore_errors: yes
+    - command: git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+      ignore_errors: yes
+
+- hosts: localhost
   roles:
-    - { role: geerlingguy.swap }
+  - role: gantsign.oh-my-zsh
+    oh_my_zsh_install: yes
+    users:
+      - username: "{{ username }}"
+    oh_my_zsh_plugins:
+    - git
+    - z
+    - zsh-syntax-highlighting
+    - zsh-completions
+    - zsh-history-substring-search
+    oh_my_zsh_theme: spaceship
 
-- hosts: all
-  vars_files:
-    - vars/yakht.yml
+- hosts: localhost
   tasks:
-    - import_tasks: tasks/fishshell.yml
-      when: install_shell == "fish"
+    - command: omz plugin enable zsh-syntax-highlighting
+      ignore_errors: yes
+    - command: omz plugin enable z
+      ignore_errors: yes
 
-- hosts: all
-  become: true
-  name: Install NodeJS, PHP, and composer
-
-  vars_files:
-    - vars/nodejs.yml
-    - vars/php.yml
-    - vars/yakht.yml
-
-  pre_tasks:
-    - name: Add repository for packages
-      ansible.builtin.apt_repository:
-        repo: ppa:ondrej/php
-
+- hosts: localhost
   roles:
-    - { role: geerlingguy.php, tags: ["php"] }
-    - { role: geerlingguy.composer, tags: ["composer"] }
-    - { role: geerlingguy.nodejs, tags: ["nodejs"] }
+  - role: gantsign.oh-my-zsh
+    oh_my_zsh_install: yes
+    users:
+      - username: "{{ username }}"
+    oh_my_zsh_theme: spaceship
 
-- hosts: all
-  name: Set user configurations
-  vars_files:
-    - vars/nodejs.yml
-    - vars/yakht.yml
-  tasks:
-    - name: Add npm-global bin directory to path (fish-shell)
-      ansible.builtin.copy:
-        dest: "/home/{{ ansible_user }}/.config/fish/conf.d/npm-global.fish"
-        content: |
-          set PATH {{ npm_config_prefix }}/bin $PATH
-      when: install_shell == "fish"
-    - name: Set npm config prefix
-      command: "npm config set prefix {{ npm_config_prefix }}"
+- hosts: localhost
+  roles:
+  - role: markosamuli.asdf
+    asdf_user: "{{ username }}"
+    asdf_plugins:
+    - name: "nodejs"
+      versions: ["14.x"]
+    - name: "ruby"
+      versions: ["2.7.3"]
 
-- hosts: all
-  vars_files:
-    - vars/lando.yml
-  tasks:
-    - import_tasks: tasks/lando.yml
+# - hosts: all
+#   become: true
+#   name: Install NodeJS, PHP, and composer
+
+#   vars_files:
+#     - vars/nodejs.yml
+#     - vars/php.yml
+#     - vars/yakht.yml
+
+#   pre_tasks:
+#     - name: Add repository for packages
+#       ansible.builtin.apt_repository:
+#         repo: ppa:ondrej/php
+
+#   roles:
+#     - { role: geerlingguy.php, tags: ["php"] }
+#     - { role: geerlingguy.composer, tags: ["composer"] }
+#     - { role: geerlingguy.nodejs, tags: ["nodejs"] }
+
+# - hosts: all
+#   name: Set user configurations
+#   vars_files:
+#     - vars/nodejs.yml
+#     - vars/yakht.yml
+#   tasks:
+#     - name: Add npm-global bin directory to path (fish-shell)
+#       ansible.builtin.copy:
+#         dest: "/home/{{ ansible_user }}/.config/fish/conf.d/npm-global.fish"
+#         content: |
+#           set PATH {{ npm_config_prefix }}/bin $PATH
+#       when: install_shell == "fish"
+#     - name: Set npm config prefix
+#       command: "npm config set prefix {{ npm_config_prefix }}"
+
+# - hosts: all
+#   vars_files:
+#     - vars/lando.yml
+#   tasks:
+#     - import_tasks: tasks/lando.yml
